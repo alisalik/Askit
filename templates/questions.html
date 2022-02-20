@@ -1,0 +1,17 @@
+{% load rest_framework %}
+
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    <ul>
+    {% for data in questions %}
+      <h3><a href="{%url 'list-answer' data.slug %}">{{data.content}}</a></h3>
+      <h6>Asked by {{data.author}} {{data.created_at}} </h6>
+    {% endfor%}
+      </ul>
+    <a href="{%url 'questions'}"></a>
+  </body>
+</html>

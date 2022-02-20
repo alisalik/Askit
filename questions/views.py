@@ -17,7 +17,20 @@ from rest_framework.renderers import TemplateHTMLRenderer
 class QuestionViewset(ModelViewSet):
     ''' Viewset to create question'''
 
-    pass
+    queryset = Questions.objects.all().order_by("-created_at")
+    serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated,]
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = "questions.html"
+    lookup_field = "slug"
+
+    def list(self,request,*args,**kwargs):
+        queryset = self.get_queryset()
+        return Response({'questions':queryset})
+
+
+    def perform_create(self,serializer):
+        serializer.save(author=self.request.user)
 
 class AnswerCreateView(generics.CreateAPIView):
 
