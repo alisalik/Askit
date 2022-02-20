@@ -3,7 +3,7 @@ from accounts.models import UserProfile
 import uuid as uuidlib
 # Create your models here.
 class Questions(models.Model):
-    #uuid = models.UUIDField(default=uuidlib.uuid4,editable=False)
+    uuid = models.UUIDField(default=uuidlib.uuid4,editable=False)
     author = models.ForeignKey(UserProfile,on_delete=models.CASCADE,related_name="questions")
     content = models.CharField(max_length=240)
     created_at = models.DateTimeField(auto_now_add=True)

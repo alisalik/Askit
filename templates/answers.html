@@ -8,10 +8,10 @@
   </head>
   <body>
     <ul>
-    {% for data in queryset %}
-      <h3><a href="{%url 'list-answer' data.slug %}">{{data.content}}</a></h3>
-      <h6>Asked by {{data.author}} {{data.created_at}} </h6>
-      <h5><a href="{%url 'create-ans' data.slug%}">Give answer</a></h5>
+    {% for data in answers %}
+      <h3>{{data.body}}</h3>
+      <h6>Answered by {{data.author}} {{data.created_at}} </h6>
+      <a href="{%url 'answer-update' data.uuid%}">Edit/Delete Answer</a>
     {% endfor%}
       </ul>
 

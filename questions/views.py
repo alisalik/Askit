@@ -9,14 +9,13 @@ from rest_framework.views import APIView
 from rest_framework.generics import get_object_or_404
 from rest_framework.exceptions import ValidationError
 from rest_framework.renderers import TemplateHTMLRenderer
+from .permissions import IsAuthorOrReadOnly
 
 
 # Create your views here.
 
 
-class QuestionViewset(ModelViewSet):
-    ''' Viewset to create question'''
-
+class ListQuestionView(generics.ListAPIView):
     queryset = Questions.objects.all().order_by("-created_at")
     serializer_class = QuestionSerializer
     permission_classes = [IsAuthenticated,]
@@ -24,13 +23,31 @@ class QuestionViewset(ModelViewSet):
     template_name = "questions.html"
     lookup_field = "slug"
 
-    def list(self,request,*args,**kwargs):
+    def get(self,request,*args,**kwargs):
         queryset = self.get_queryset()
-        return Response({'questions':queryset})
+        return Response({'queryset':queryset})
 
+class CreateQuestionView(generics.ListCreateAPIView):
+    ''' View to create question'''
 
-    def perform_create(self,serializer):
-        serializer.save(author=self.request.user)
+    queryset = Questions.objects.all().order_by("-created_at")
+    serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated,]
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = "questioncreate.html"
+    lookup_field = "slug"
+
+    def get(self,request,*args,**kwargs):
+        serializer = self.get_serializer()
+        return Response({'questions':serializer})
+
+    def create(self,request,*args,**kwargs):
+        serializer  = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save(author=self.request.user)
+            return redirect('list-ques')
+        else:
+            return serializer.errors
 
 class AnswerCreateView(generics.CreateAPIView):
 
@@ -39,6 +56,19 @@ class AnswerCreateView(generics.CreateAPIView):
     queryset = Answers.objects.all()
     serializer_class =  AnswerSerializer
     permission_classes = [IsAuthenticated,]
+    '''renderer_classes = [TemplateHTMLRenderer]
+    template_name = "answer.html"
+
+    def list(self,request,*args,**kwargs):
+        queryset = self.get_queryset()
+        return Response({'answer':queryset})
+
+
+    def create(self,request,*args,**kwargs):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return redirect('questions')'''
 
     def perform_create(self,serializer):
         kwarg_slug = self.kwargs.get("slug")  #gets the slug for the specific question
@@ -55,8 +85,9 @@ class AnsDelUpdView(generics.RetrieveUpdateDestroyAPIView):
 
     queryset = Answers.objects.all()
     serializer_class = AnswerSerializer
-    permission_classes = [IsAuthenticated,]
+    permission_classes = [IsAuthenticated,IsAuthorOrReadOnly]
     lookup_field = "uuid"
+
 
 
 class AnswerListView(generics.ListAPIView):
@@ -66,7 +97,47 @@ class AnswerListView(generics.ListAPIView):
     queryset = Answers.objects.all()
     serializer_class = AnswerSerializer
     permission_classes = [IsAuthenticated,]
+    renderer_classes = [TemplateHTMLRenderer]
+    template_name = "answers.html"
 
     def get_queryset(self):
         kwarg_slug = self.kwargs.get("slug")
         return Answers.objects.filter(question__slug=kwarg_slug).order_by("-created_at")
+
+    def list(self,request,*args,**kwargs):
+        queryset = self.get_queryset()
+        return Response({'answers':queryset})
+
+
+class AnswerLikeAPIView(APIView):
+    """Allow users to add/remove a like to/from an answer instance."""
+
+    serializer_class = AnswerSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = "uuid"
+
+    def delete(self, request, uuid):
+        """Remove request.user from the voters queryset of an answer instance."""
+        answer = get_object_or_404(Answers, uuid=uuid)
+        user = request.user
+
+        answer.voters.remove(user)
+        answer.save()
+
+        serializer_context = {"request": request}
+        serializer = self.serializer_class(answer, context=serializer_context)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def post(self, request, uuid):
+        """Add request.user to the voters queryset of an answer instance."""
+        answer = get_object_or_404(Answers, uuid=uuid)
+        user = request.user
+
+        answer.voters.add(user)
+        answer.save()
+
+        serializer_context = {"request": request}
+        serializer = self.serializer_class(answer, context=serializer_context)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
