@@ -49,6 +49,13 @@ class CreateQuestionView(generics.ListCreateAPIView):
         else:
             return serializer.errors
 
+class RUDQuestionView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Questions.objects.all()
+    serializer_class = QuestionSerializer
+    permission_classes = [IsAuthenticated,IsAuthorOrReadOnly]
+    lookup_field = "slug"
+
+
 class AnswerCreateView(generics.CreateAPIView):
 
     '''View to create answer to question'''
